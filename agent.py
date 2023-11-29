@@ -435,18 +435,6 @@ class DeepQLearningAgent(Agent):
         return self.AgentModel(self._board_size, self._n_frames, self._n_actions, self._version)
 
 
-    def set_weights_trainable(self):
-        """Set selected layers to non trainable and compile the model"""
-        for param in self._model.parameters():
-            param.requires_grad = False
-        # the last dense layers should be trainable
-        for name, param in self._model.named_parameters():
-            if 'action_prev_dense' in name or 'action_values' in name:
-                param.requires_grad = True
-        self.optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, self._model.parameters()), lr=0.0005)
-        self.loss = mean_huber_loss
-
-
     def set_loss_and_optimizer(self):
         self.optimizer = optim.RMSprop(self._model.parameters(), lr=0.0005)
         self.loss = mean_huber_loss
