@@ -336,9 +336,7 @@ class DeepQLearningAgent(Agent):
                 Predicted model outputs on board, 
                 of shape board.shape[0] * num actions
             """
-            # to correct dimensions and normalize
             board = self._prepare_input(board)
-            # the default model to use
             if model is None:
                 model = self._model
             with torch.no_grad():
@@ -379,7 +377,6 @@ class DeepQLearningAgent(Agent):
         output : Numpy array
             Selected action using the argmax function
         """
-        # use the agent model to make the predictions
         model_outputs = self._get_model_outputs(board, self._model)
         return np.argmax(np.where(legal_moves==1, model_outputs, -np.inf), axis=1)
     
@@ -396,7 +393,7 @@ class DeepQLearningAgent(Agent):
                 model_config = json.loads(f.read())
 
             in_channels = frames
-            output_size = np.array(board_size)  # Initialize output_size with board_size
+            output_size = np.array(board_size)  
             layers = []
 
             for l in model_config:
@@ -404,26 +401,26 @@ class DeepQLearningAgent(Agent):
                     conv_layer = nn.Conv2d(in_channels, l['filters'], tuple(l['kernel_size']), stride=tuple(l['strides']))
                     layers.append(conv_layer)
                     layers.append(nn.ReLU())
-                    # Update in_channels to match output size of Conv2D
+                    # In order to to match output size of Conv2D
                     in_channels = l['filters']
-                    # Update output_size to match output size of Conv2D
+                    # In order to match output size of Conv2D
                     output_size = ((output_size - np.array(l['kernel_size'])) // np.array(l['strides'])) + 1
                 elif 'Flatten' in l:
                     layers.append(nn.Flatten())
-                    # Update in_channels to 1 since Flatten reduces dimensions
+                    # Done since Flatten reduces dimensions
                     in_channels = 1
-                    output_size = 1  # Update output_size to 1 since Flatten reduces dimensions
+                    output_size = 1  # Done since Flatten reduces dimensions
                 elif 'Dense' in l:
                     layers.append(nn.Linear(in_channels * output_size * output_size, l['units']))
                     layers.append(nn.ReLU())
-                    in_channels = l['units']  # Update in_channels to match output size of Dense
+                    in_channels = l['units']  #Done to match output size of Dense
 
             layers.append(nn.Linear(in_channels * output_size * output_size, self.n_actions))
             self.model = nn.Sequential(*layers)
 
         def forward(self, x):
-            x = x.permute(0, 3, 1, 2)  # Permute dimensions to match what PyTorch expects
-            x = x.reshape(x.size(0), -1)  # Flatten the input before passing it to the linear layers
+            x = x.permute(0, 3, 1, 2)  # To match what Conv2D expects
+            x = x.reshape(x.size(0), -1)  # To match what Flatten expects
             return self.model(x)
 
 
@@ -495,7 +492,6 @@ class DeepQLearningAgent(Agent):
             assert isinstance(iteration, int), "iteration should be an integer"
         else:
             iteration = 0
-        #models\v17.1\model_163500_target.h5
         self._model.load_state_dict(torch.load("{}/model_{:04d}.pth".format(file_path, iteration)))
         if(self._use_target_net):
             self._target_net.load_state_dict(torch.load("{}/model_{:04d}_target.pth".format(file_path, iteration)))
@@ -523,43 +519,26 @@ class DeepQLearningAgent(Agent):
         loss : float
             Average loss over all the batches
         """
-        #ReplayBufferNumpy defined in replay_buffer.py
-        # get the data from the buffer
-        # get a random sample from the buffer
+
 
         boards, actions, rewards, next_boards, dones, legal_moves = self._buffer.sample()
 
-        # get the model outputs for the current state
         model_outputs = self._get_model_outputs(boards, self._model)
-        # get the model outputs for the next state
         next_model_outputs = self._get_model_outputs(next_boards, self._target_net)
-        # get the target values
         target_values = rewards + self._gamma * np.max(next_model_outputs, axis=1) * (1-dones)
-        # clip the rewards if needed
         if(reward_clip):
             target_values = np.clip(target_values, -1, 1)
-        # get the model outputs for the current state
         actions_indices = np.argmax(actions, axis=1)
-        # Use the action indices for indexing
+
         model_outputs = model_outputs[np.arange(model_outputs.shape[0]), actions_indices]
 
-        # Convert numpy arrays to PyTorch tensors and set requires_grad to True
         target_values_tensor = torch.from_numpy(target_values).float().requires_grad_(True)
         model_outputs_tensor = torch.from_numpy(model_outputs).float().requires_grad_(True)
 
-        # Set loss and optimizer
         self.set_loss_and_optimizer()
-        
-        # Calculate the loss
         loss = self.loss(target_values_tensor, model_outputs_tensor)
-        
-        # Zero the gradients
         self.optimizer.zero_grad()
-        
-        # Backpropagate the loss
         loss.backward()
-        
-        # Update the weights
         self.optimizer.step()
         
         return loss.item()
