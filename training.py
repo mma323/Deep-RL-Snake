@@ -12,14 +12,14 @@ import pandas as pd
 import time
 from utils import play_game, play_game2
 from game_environment import Snake, SnakeNumpy
-import tensorflow as tf
-from agent import DeepQLearningAgent, PolicyGradientAgent,\
-                AdvantageActorCriticAgent, mean_huber_loss
+from agent import DeepQLearningAgent
 import json
+import torch
 
-# some global variables
-tf.random.set_seed(42)
+torch.manual_seed(42)
 version = 'v17.1'
+
+
 
 # get training configurations
 with open('model_config/{:s}.json'.format(version), 'r') as f:
@@ -49,10 +49,6 @@ agent = DeepQLearningAgent(board_size=board_size, frames=frames, n_actions=n_act
 # check in the same order as class hierarchy
 if(isinstance(agent, DeepQLearningAgent)):
     agent_type = 'DeepQLearningAgent'
-if(isinstance(agent, PolicyGradientAgent)):
-    agent_type = 'PolicyGradientAgent'
-if(isinstance(agent, AdvantageActorCriticAgent)):
-    agent_type = 'AdvantageActorCriticAgent'
 print('Agent is {:s}'.format(agent_type))
 
 # setup the epsilon range and decay rate for epsilon

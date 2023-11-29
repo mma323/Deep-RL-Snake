@@ -2,11 +2,12 @@
 # useful to study different iterations
 
 import numpy as np
-from agent import DeepQLearningAgent, PolicyGradientAgent, \
-        AdvantageActorCriticAgent, HamiltonianCycleAgent, BreadthFirstSearchAgent
+from agent import DeepQLearningAgent
 from game_environment import Snake, SnakeNumpy
 from utils import visualize_game
 import json
+import imageio
+import matplotlib.pyplot as plt
 # import keras.backend as K
 
 # some global variables
@@ -46,3 +47,4 @@ for iteration in iteration_list:
         visualize_game(env, agent,
             path='images/game_visual_{:s}_{:d}_14_ob_{:d}.mp4'.format(version, iteration, i),
             debug=False, animate=True, fps=12)
+    plt.show()
